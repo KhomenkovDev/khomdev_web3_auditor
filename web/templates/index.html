@@ -3,82 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KhomDev | Automated Smart Contract & Python Reviewer</title>
-    <!-- Google Fonts -->
+    <title>VulnAudit — Institutional Security Protocol</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
-    <!-- Pygments CSS for code highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
 </head>
 <body>
-    <div class="app-container">
+    <div class="app-shell" id="app">
         <!-- Sidebar -->
-        <aside class="glass-panel sidebar">
+        <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fa-solid fa-shield-halved"></i> KhomDev</h2>
-                <p>Web3 & Python Reviewer</p>
-            </div>
-            
-            <div class="input-section">
-                <h3><i class="fa-brands fa-github"></i> GitHub URL</h3>
-                <form id="github-form">
-                    <div class="input-group">
-                        <input type="url" id="repo-url" placeholder="https://github.com/..." required>
-                        <button type="submit" id="github-btn" class="btn-primary">Load</button>
-                    </div>
-                </form>
+                <div class="logo">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    VulnAudit <span class="version">V1.0</span>
+                </div>
             </div>
 
-            <div class="input-section">
-                <h3><i class="fa-solid fa-folder-open"></i> Local Files</h3>
-                <form id="local-form">
-                    <label for="local-files" class="drop-zone" id="drop-zone">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span>Click to Select Folder or Drop Files (.py, .sol, .js)</span>
-                        <input type="file" id="local-files" multiple webkitdirectory directory style="display: none;">
-                    </label>
-                </form>
-            </div>
-            
-            <div class="status-indicator" id="status-indicator">
-                <i class="fa-solid fa-circle-check" style="color: #4ec9b0;"></i> <span>Ready</span>
+            <div class="sidebar-content">
+                <div class="control-group">
+                    <label>Audit Target</label>
+                    <div class="input-wrapper">
+                        <input type="url" id="repo-url" placeholder="https://github.com/user/repo" required>
+                    </div>
+                </div>
+                
+                <button id="start-audit" class="btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-bolt-lightning"></i> Initialize Protocol
+                </button>
+
+                <div id="active-sessions-list" style="margin-top: 40px;">
+                    <label>Active Sessions</label>
+                    <div id="sessions-container">
+                        <!-- Dynamic sessions list -->
+                    </div>
+                </div>
             </div>
         </aside>
 
-        <!-- Main Chat Area -->
-        <main class="glass-panel main-area">
-            <div class="chat-display" id="chat-display">
-                <div class="message system">
-                    <div class="msg-header"><i class="fa-solid fa-robot"></i> System</div>
-                    <div class="msg-body">Welcome! Please paste a GitHub URL or upload your Smart Contracts / Python codebase for a deep security and performance audit.</div>
+        <!-- Main Dashboard -->
+        <main class="main-dashboard">
+            <header class="top-nav">
+                <div class="nav-status">
+                    <span class="status-indicator" id="global-status-dot"></span>
+                    <span id="global-status-text">SYSTEM READY</span>
                 </div>
-            </div>
-            
-            <div class="input-area">
-                <form id="chat-form">
-                    <textarea id="chat-input" placeholder="Ask follow-up questions about the code, request refactoring, etc..." rows="2" disabled></textarea>
-                    <button type="submit" id="chat-btn" class="btn-primary tooltip" disabled>
-                        <i class="fa-solid fa-paper-plane"></i>
-                        <span class="tooltiptext">Send Message</span>
-                    </button>
-                </form>
-            </div>
+                <div class="nav-actions">
+                    <!-- Future actions like PDF export -->
+                </div>
+            </header>
+
+            <section class="dashboard-content" id="dashboard-view">
+                <!-- Welcome State -->
+                <div id="welcome-state" class="report-panel" style="text-align: center; margin-top: 10vh;">
+                    <i class="fa-solid fa-satellite-dish" style="font-size: 4rem; color: var(--accent-cyan); margin-bottom: 24px;"></i>
+                    <h1>Awaiting Command</h1>
+                    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
+                        Enter a GitHub repository URL to initiate an institutional security audit using Gemini 2.5 Flash synthesis.
+                    </p>
+                </div>
+
+                <!-- Active Audit State (Stats) -->
+                <div id="audit-stats" class="stats-grid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-label">Security Score</div>
+                        <div class="stat-value" id="stat-score">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Files Scanned</div>
+                        <div class="stat-value" id="stat-files">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Risk Level</div>
+                        <div class="stat-value" id="stat-risk">--</div>
+                    </div>
+                </div>
+
+                <!-- Report Content -->
+                <div id="report-view" class="report-panel" style="display: none;">
+                    <div id="report-html">
+                        <!-- Audit findings rendered here -->
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="spinner"></div>
-        <p id="loading-text">Analyzing codebase... this may take a minute.</p>
-    </div>
+    <script>
+        const repoInput = document.getElementById('repo-url');
+        const startBtn = document.getElementById('start-audit');
+        const statusDot = document.getElementById('global-status-dot');
+        const statusText = document.getElementById('global-status-text');
+        
+        const welcomeState = document.getElementById('welcome-state');
+        const auditStats = document.getElementById('audit-stats');
+        const reportView = document.getElementById('report-view');
+        const reportHtml = document.getElementById('report-html');
+        
+        let currentSessionId = null;
 
-    <!-- External dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script src="/static/js/main.js"></script>
+        startBtn.addEventListener('click', async () => {
+            const url = repoInput.value;
+            if (!url) return;
+
+            startBtn.disabled = true;
+            statusDot.classList.add('busy');
+            statusText.innerText = 'INITIALIZING...';
+
+            try {
+                const res = await fetch('/api/audit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repo_url: url })
+                });
+                const data = await res.json();
+                currentSessionId = data.session_id;
+                pollStatus();
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = 'ERROR';
+                startBtn.disabled = false;
+            }
+        });
+
+        async function pollStatus() {
+            if (!currentSessionId) return;
+
+            try {
+                const res = await fetch(`/api/session/${currentSessionId}`);
+                const data = await res.json();
+
+                statusText.innerText = data.message.toUpperCase();
+                
+                if (data.status === 'complete') {
+                    renderReport(data);
+                } else if (data.status === 'error') {
+                    alert('Audit failed: ' + data.message);
+                    resetUI();
+                } else {
+                    setTimeout(pollStatus, 2000);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderReport(data) {
+            statusDot.classList.remove('busy');
+            startBtn.disabled = false;
+            
+            welcomeState.style.display = 'none';
+            auditStats.style.display = 'grid';
+            reportView.style.display = 'block';
+            
+            document.getElementById('stat-score').innerText = (10 - data.risk_score).toFixed(1);
+            document.getElementById('stat-risk').innerText = data.risk_score > 7 ? 'CRITICAL' : data.risk_score > 4 ? 'MEDIUM' : 'LOW';
+            document.getElementById('stat-files').innerText = 'SCAN COMPLETE';
+            
+            reportHtml.innerHTML = data.html_report || '<h1>No findings reported.</h1>';
+        }
+
+        function resetUI() {
+            statusDot.classList.remove('busy');
+            statusText.innerText = 'SYSTEM READY';
+            startBtn.disabled = false;
+        }
+    </script>
 </body>
 </html>

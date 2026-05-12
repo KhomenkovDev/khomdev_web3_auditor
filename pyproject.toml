@@ -1,35 +1,70 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0,<78"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "web3-auditor"
-version = "0.1.0"
-authors = [
-  { name="Author Name", email="author@example.com" },
-]
-description = "An AI-powered Smart Contract & Python Code Reviewer for Web3."
+version = "0.2.0"
+description = "AI-powered code reviewer for smart contracts and Python projects"
 readme = "README.md"
-requires-python = ">=3.9"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Environment :: X11 Applications :: Qt",
-]
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+
 dependencies = [
-    "PyQt6>=6.0.0",
-    "google-genai>=0.3.0",
-    "markdown>=3.0.0",
-    "python-dotenv>=1.0.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.23.0",
-    "jinja2>=3.1.2",
-    "python-multipart>=0.0.6"
+    "google-genai>=0.3,<2",
+    "markdown>=3.0,<4",
+    "python-dotenv>=1.0,<2",
+    "sqlmodel>=0.0.22,<0.1",
+    "pydantic-settings>=2.0,<3",
+    "rich>=13.0,<14",
+    "fastapi>=0.100,<1",
+    "uvicorn>=0.23,<1",
+    "jinja2>=3.1,<4",
+    "python-multipart>=0.0.6,<1",
+]
+
+[project.optional-dependencies]
+gui = [
+    "PyQt6>=6.0,<7",
+]
+export = [
+    "weasyprint>=62,<64",
+]
+dev = [
+    "pytest>=8,<9",
+    "ruff>=0.11,<1",
+    "mypy>=1.15,<2",
+    "pytest-mock>=3,<4",
+    "httpx>=0.28,<1",
 ]
 
 [project.scripts]
 web3-auditor = "web3_auditor.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["web3_auditor", "web3_auditor.*"]
+include = ["web3_auditor", "web3_auditor.*", "web", "web.*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [".venv", "migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict_optional = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "web3_auditor.*"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

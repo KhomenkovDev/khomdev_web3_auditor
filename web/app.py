@@ -1,119 +1,46 @@
-import os
-import uuid
-import tempfile
-import markdown
-import shutil
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Dict, List, Optional
-from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-import uvicorn
+
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
-from web3_auditor.github import GitManager
-from web3_auditor.scanner import get_source_files
-from web3_auditor.llm_chat import LLMChatManager
+from web3_auditor.api.routes import router
+from web3_auditor.db.database import init_db
 
-# Load env variables
 load_dotenv()
 
-app = FastAPI(title="KhomDev Web3 Auditor Web App")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s | %(asctime)s | %(name)s | %(message)s",
+)
 
-# Mount static and templates (handle paths elegantly for execution anywhere)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    logger.info("Initializing Institutional Web3 Auditor Protocol...")
+    init_db()
+    yield
+    logger.info("Shutting down protocol...")
+
+
+app = FastAPI(
+    title="VulnAudit Institutional",
+    description="Professional-grade Web3 & Python Security Analysis Portal",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
 BASE_DIR = Path(__file__).resolve().parent
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+app.mount(
+    "/static",
+    StaticFiles(directory=str(BASE_DIR / "static")),
+    name="static",
+)
 
-# In-memory session store for lightweight cloud usage
-sessions: Dict[str, LLMChatManager] = {}
-
-def get_session(session_id: str) -> LLMChatManager:
-    if session_id not in sessions:
-        sessions[session_id] = LLMChatManager()
-    return sessions[session_id]
-
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    """Serve the main frontend UI."""
-    return templates.TemplateResponse(request=request, name="index.html")
-
-@app.post("/api/load-github")
-async def load_github(repo_url: str = Form(...)):
-    """Clone a GitHub repository, scan for Python, and initialize review."""
-    session_id = str(uuid.uuid4())
-    manager = get_session(session_id)
-    git_manager = GitManager()
-    
-    try:
-        repo_path = git_manager.clone_repository(repo_url)
-        files = get_source_files(repo_path)
-        
-        if not files:
-            git_manager.cleanup()
-            return JSONResponse({"status": "error", "message": "No supported files (.py, .sol, .js) found in the repository."}, status_code=400)
-            
-        review_output = manager.start_session(files)
-        
-        # Render the markdown securely
-        html_review = markdown.markdown(review_output, extensions=['fenced_code', 'codehilite'])
-        return {"status": "success", "session_id": session_id, "html_review": html_review, "raw_review": review_output}
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-    finally:
-        git_manager.cleanup()
-
-@app.post("/api/load-local")
-async def load_local(files: List[UploadFile] = File(...)):
-    """Upload local files, initialize review."""
-    session_id = str(uuid.uuid4())
-    manager = get_session(session_id)
-    
-    temp_dir = tempfile.mkdtemp(prefix="web3_auditor_web_upload_")
-    source_files = []
-    
-    try:
-        valid_extensions = {".py", ".sol", ".js"}
-        for uf in files:
-            # We process supported source files
-            ext = Path(uf.filename).suffix
-            if ext in valid_extensions:
-                content = await uf.read()
-                try:
-                    text_content = content.decode("utf-8")
-                    source_files.append((uf.filename, text_content))
-                except UnicodeDecodeError:
-                    continue # Skip binary
-                    
-        if not source_files:
-            shutil.rmtree(temp_dir)
-            return JSONResponse({"status": "error", "message": "No supported files (.py, .sol, .js) found in upload."}, status_code=400)
-            
-        review_output = manager.start_session(source_files)
-        html_review = markdown.markdown(review_output, extensions=['fenced_code', 'codehilite'])
-        
-        return {"status": "success", "session_id": session_id, "html_review": html_review, "raw_review": review_output}
-        
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-@app.post("/api/chat")
-async def chat(session_id: str = Form(...), message: str = Form(...)):
-    """Send follow-up chat messages."""
-    if not session_id or session_id not in sessions:
-         return JSONResponse({"status": "error", "message": "Session expired or invalid. Please reload the code."}, status_code=400)
-         
-    manager = sessions[session_id]
-    
-    try:
-        response_output = manager.send_message(message)
-        html_response = markdown.markdown(response_output, extensions=['fenced_code', 'codehilite'])
-        return {"status": "success", "html_response": html_response, "raw_response": response_output}
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), reload=True)
+app.include_router(router)

@@ -1,0 +1,23 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "${PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+
+  desktop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles:
+      - desktop
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw

@@ -1,14 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+*.pyc
 .venv/
 venv/
+env/
+
+# Environment files
 .env
-__pycache__/
-*.pyc
-.DS_Store
-build/
-dist/
-*.egg-info/
-staticfiles/
+.env.local
+
+# IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
 *.spec
-node_modules/
